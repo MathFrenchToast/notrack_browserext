@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NoTrack Extension</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="brand">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 22C12 22 20 18 20 12V5L12 2L4 5V12C4 18 12 22 12 22Z" fill="url(#shield-grad)" stroke="#8b5cf6" stroke-width="2"/>
+          <path d="M9 12L11 14L15 10" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <defs>
+            <linearGradient id="shield-grad" x1="4" y1="2" x2="20" y2="22" gradientUnits="userSpaceOnUse">
+              <stop stop-color="#a78bfa" stop-opacity="0.6"/>
+              <stop offset="1" stop-color="#4c1d95" stop-opacity="0.8"/>
+            </linearGradient>
+          </defs>
+        </svg>
+        <h1>NoTrack</h1>
+      </div>
+      
+      <!-- Enable/Disable Switch -->
+      <label class="switch-container" title="Toggle Extension">
+        <input type="checkbox" id="toggle-extension" checked>
+        <span class="slider"></span>
+      </label>
+    </header>
+
+    <!-- Main Counter Area -->
+    <main class="app-main">
+      <div class="counter-card">
+        <div class="counter-circle">
+          <div class="counter-inner">
+            <span id="clean-count">0</span>
+            <span class="counter-label">Cleaned</span>
+          </div>
+          <div class="glow-ring"></div>
+        </div>
+        <p class="counter-subtitle">Tracking parameters stripped from URLs</p>
+      </div>
+
+      <!-- Parameters Section -->
+      <div class="section-card">
+        <div class="section-header">
+          <h2>Active Filters</h2>
+        </div>
+        
+        <!-- Default list (Read-only badges) -->
+        <div class="filter-group">
+          <h3>Default Trackers</h3>
+          <div class="badges-container" id="default-badges">
+            <span class="badge">utm_source</span>
+            <span class="badge">utm_medium</span>
+            <span class="badge">utm_campaign</span>
+            <span class="badge">utm_term</span>
+            <span class="badge">utm_content</span>
+            <span class="badge">utm_id</span>
+            <span class="badge">gclid</span>
+            <span class="badge">fbclid</span>
+            <span class="badge">msclkid</span>
+          </div>
+        </div>
+
+        <!-- Custom list -->
+        <div class="filter-group">
+          <h3>Custom Parameters</h3>
+          <div class="custom-list-container">
+            <ul id="custom-list" class="custom-list">
+              <!-- Dynamically populated -->
+            </ul>
+            <p id="no-custom-text" class="empty-text">No custom parameters added yet.</p>
+          </div>
+          
+          <!-- Add Form -->
+          <form id="add-param-form" class="add-form">
+            <input type="text" id="new-param-input" placeholder="e.g. fbclid" required pattern="^[a-zA-Z0-9_\-]+$" title="Letters, numbers, underscores, and dashes only">
+            <button type="submit" class="btn-add" aria-label="Add Parameter">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+              </svg>
+            </button>
+          </form>
+        </div>
+      </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <button id="btn-reset" class="btn-reset" title="Reset Counter">
+        <svg class="reset-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+        </svg>
+        Reset Stats
+      </button>
+      <span class="version-label">v1.0.0</span>
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
