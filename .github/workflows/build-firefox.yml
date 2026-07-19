@@ -1,0 +1,39 @@
+name: Build Firefox Add-on
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build Firefox Extension
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Lint Extension
+        run: |
+          npx --yes web-ext lint --source-dir firefox
+
+      - name: Build Extension Archive
+        run: |
+          # web-ext build compiles the firefox folder into a clean release zip
+          npx --yes web-ext build --source-dir firefox --artifacts-dir build-artifacts
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: firefox-addon-release
+          path: build-artifacts/*.zip
+          retention-days: 7
