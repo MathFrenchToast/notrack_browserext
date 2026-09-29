@@ -1,0 +1,9 @@
+{
+  "name": "notrack",
+  "version": "1.0.0",
+  "description": "Privacy-focused browser extension that cleans tracking parameters from URLs.",
+  "scripts": {
+    "test": "node --test"
+  },
+  "type": "module"
+}

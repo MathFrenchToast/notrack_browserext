@@ -189,6 +189,10 @@
         <a id="link-utm" class="test-link" href="#">Loading link...</a>
         <a id="link-custom" class="test-link" href="#">Loading link...</a>
         <a id="link-mixed" class="test-link" href="#">Loading link...</a>
+        <a id="link-magnews-query" class="test-link" href="#">Loading link...</a>
+        <a id="link-magnews-hash" class="test-link" href="#">Loading link...</a>
+        <a id="link-spa-hash" class="test-link" href="#">Loading link...</a>
+        <a id="link-safe-anchor" class="test-link" href="#">Loading link...</a>
       </div>
     </div>
 
@@ -198,58 +202,98 @@
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"></path>
         </svg>
-        How to Load & Test in Firefox
+        How to Load & Test in Firefox / Chrome
       </h2>
       <ol>
-        <li>Open Firefox and type <code class="accent-text">about:debugging</code> in the address bar.</li>
-        <li>Click on <span class="accent-text">"This Firefox"</span> in the left sidebar.</li>
-        <li>Click the <span class="accent-text">"Load Temporary Add-on..."</span> button.</li>
-        <li>Navigate to your extension directory, open the <code class="accent-text">firefox/</code> folder, and select the <code class="accent-text">manifest.json</code> file.</li>
-        <li>Return to this tab, click any link above, and verify that tracking parameters are instantly stripped!</li>
+        <li>Open Firefox (<code class="accent-text">about:debugging</code> &rarr; Load Temporary Add-on) or Chrome (<code class="accent-text">chrome://extensions</code> &rarr; Load unpacked).</li>
+        <li>Select the <code class="accent-text">firefox/manifest.json</code> or <code class="accent-text">chrome/</code> folder.</li>
+        <li>Click any link above, including the MagNews hash tracking link.</li>
+        <li>Observe that query parameters are stripped at network level, and hash tracking parameters are immediately cleaned client-side without page reload!</li>
       </ol>
     </div>
   </div>
 
   <script>
-    // Dynamically set up links pointing to this same file with query parameters
     const baseUri = window.location.origin + window.location.pathname;
 
     document.getElementById("link-utm").href = baseUri + "?utm_source=newsletter&utm_medium=email&utm_campaign=summer_sale&keep_me=yes";
     document.getElementById("link-utm").innerText = "1. Default UTMs: ?utm_source=newsletter&utm_medium=email&utm_campaign=summer_sale&keep_me=yes";
 
     document.getElementById("link-custom").href = baseUri + "?custom_tracker=xyz123&another_custom=456&keep_me=yes";
-    document.getElementById("link-custom").innerText = "2. Custom Params: ?custom_tracker=xyz123&another_custom=456&keep_me=yes (Strip custom params if configured)";
+    document.getElementById("link-custom").innerText = "2. Custom Params: ?custom_tracker=xyz123&another_custom=456&keep_me=yes";
 
     document.getElementById("link-mixed").href = baseUri + "?utm_source=twitter&custom_tracker=abc123_456&regular_param=hello";
     document.getElementById("link-mixed").innerText = "3. Mixed Parameters: ?utm_source=twitter&custom_tracker=abc123_456&regular_param=hello";
 
-    // Read and display current query parameters
-    const urlParams = new URLSearchParams(window.location.search);
-    const container = document.getElementById("params-container");
+    document.getElementById("link-magnews-query").href = baseUri + "?utm_source=MagNews&utm_medium=email&een=e69412b&seen=2&gbmlus=29ff08&article=julia1";
+    document.getElementById("link-magnews-query").innerText = "4. MagNews Query: ?utm_source=MagNews&een=...&seen=2&gbmlus=...&article=julia1";
 
-    const trackingKeys = [
-      "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "utm_id",
-      "gclid", "fbclid", "msclkid", "custom_tracker", "another_custom"
-    ];
+    document.getElementById("link-magnews-hash").href = baseUri + "#utm_source=MagNews&utm_medium=email&utm_campaign=IA_28/09/2026&een=e69412b05a83d66051dfaa54fae52eba&seen=2&gbmlus=29ff0886bc30e389c5f284a6357cc1f6473984592925340323fcd822562e94c4";
+    document.getElementById("link-magnews-hash").innerText = "5. MagNews Hash (Reported Case): #utm_source=...&een=...&seen=...&gbmlus=...";
 
-    if (urlParams.toString() === "") {
-      container.innerHTML = `<div class="empty-params">🎉 No parameters detected! URL is clean.</div>`;
-    } else {
-      let html = '<ul class="param-list">';
+    document.getElementById("link-spa-hash").href = baseUri + "#/dashboard?utm_source=slack&een=test123&tab=analytics";
+    document.getElementById("link-spa-hash").innerText = "6. SPA Hash Route: #/dashboard?utm_source=slack&een=test123&tab=analytics";
+
+    document.getElementById("link-safe-anchor").href = baseUri + "#safe-section-anchor";
+    document.getElementById("link-safe-anchor").innerText = "7. Safe Anchor: #safe-section-anchor (Should remain untouched)";
+
+    // Read and display detected parameters from both search and hash
+    function refreshParamsDisplay() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const container = document.getElementById("params-container");
+
+      const trackingKeys = [
+        "utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "utm_id",
+        "gclid", "fbclid", "msclkid", "een", "seen", "gbmlus", "custom_tracker", "another_custom"
+      ];
+
+      const detected = [];
+
+      // Query parameters
       urlParams.forEach((value, key) => {
-        const isTracking = trackingKeys.includes(key.toLowerCase());
-        const keyClass = isTracking ? 'param-key' : 'param-key safe';
-        const badge = isTracking ? ' (Tracker parameter)' : ' (Safe parameter)';
-        html += `
-          <li class="param-item">
-            <span class="${keyClass}">${key}${badge}</span>
-            <span class="param-val">"${value}"</span>
-          </li>
-        `;
+        detected.push({ location: "query", key, value });
       });
-      html += '</ul>';
-      container.innerHTML = html;
+
+      // Hash parameters inspection
+      if (window.location.hash && window.location.hash !== "#") {
+        const rawHash = window.location.hash.slice(1);
+        const hashQuery = rawHash.includes("?") ? rawHash.split("?")[1] : rawHash;
+        const hashSegments = hashQuery.split("&");
+        for (const segment of hashSegments) {
+          if (!segment) continue;
+          const eq = segment.indexOf("=");
+          const k = eq !== -1 ? segment.slice(0, eq) : segment;
+          const v = eq !== -1 ? segment.slice(eq + 1) : "";
+          if (trackingKeys.includes(k.toLowerCase())) {
+            detected.push({ location: "hash", key: k, value: v });
+          } else if (eq !== -1) {
+            detected.push({ location: "hash", key: k, value: v });
+          }
+        }
+      }
+
+      if (detected.length === 0) {
+        container.innerHTML = `<div class="empty-params">🎉 No tracking parameters detected! URL is clean.</div>`;
+      } else {
+        let html = '<ul class="param-list">';
+        detected.forEach(({ location, key, value }) => {
+          const isTracking = trackingKeys.includes(key.toLowerCase());
+          const keyClass = isTracking ? 'param-key' : 'param-key safe';
+          const badge = isTracking ? ` [${location.toUpperCase()}] (Tracker)` : ` [${location.toUpperCase()}] (Safe parameter)`;
+          html += `
+            <li class="param-item">
+              <span class="${keyClass}">${key}${badge}</span>
+              <span class="param-val">"${value}"</span>
+            </li>
+          `;
+        });
+        html += '</ul>';
+        container.innerHTML = html;
+      }
     }
+
+    refreshParamsDisplay();
+    window.addEventListener("hashchange", refreshParamsDisplay);
   </script>
 </body>
 </html>

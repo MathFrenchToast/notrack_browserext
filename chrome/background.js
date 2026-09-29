@@ -7,7 +7,10 @@ const DEFAULT_PARAMS = [
   "utm_id",
   "gclid",
   "fbclid",
-  "msclkid"
+  "msclkid",
+  "een",
+  "seen",
+  "gbmlus"
 ];
 
 // Function to synchronize declarativeNetRequest rules with extension storage state
@@ -96,6 +99,14 @@ chrome.runtime.onStartup.addListener(async () => {
 chrome.storage.onChanged.addListener(async (changes) => {
   if (changes.enabled || changes.customParams) {
     await syncRules();
+  }
+});
+
+// Listen to trackers cleaned by the content script (e.g. from hash / in-page fragment)
+chrome.runtime.onMessage.addListener(async (message) => {
+  if (message && message.type === "TRACKERS_CLEANED" && typeof message.count === "number" && message.count > 0) {
+    const stats = await chrome.storage.local.get({ cleanCount: 0 });
+    await chrome.storage.local.set({ cleanCount: stats.cleanCount + message.count });
   }
 });
 

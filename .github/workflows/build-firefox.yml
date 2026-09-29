@@ -22,6 +22,10 @@ jobs:
         with:
           node-version: '20.x'
 
+      - name: Run Unit Tests
+        run: |
+          npm test
+
       - name: Lint Extension
         run: |
           npx --yes web-ext lint --source-dir firefox

@@ -1,31 +1,39 @@
 # Architecture Decision Record: Web Extension Architecture for NoTrack
 
 ## Status
-Proposed
+Accepted
 
 ## Context
-We need to build a web extension (`notrack ext`) that removes tracking query parameters from URLs (e.g., `utm_source`, `utm_medium`, `utm_campaign`) before the browser loads the page. The extension must support both Firefox and Chrome. Firefox is the primary target and browser of trust, currently "in progress," while Chrome is "todo."
+We need to build a web extension (`notrack ext`) that removes tracking query parameters from URLs (e.g., `utm_source`, `utm_medium`, `utm_campaign`, `gclid`, `fbclid`, and email tracking parameters such as `een`, `seen`, `gbmlus`) before and during page navigation.
+The extension must support both Firefox and Chrome.
+Historically, parameters were passed in the query string (`?param=val`), but email marketing tools (such as MagNews) and modern Single Page Applications increasingly append tracking parameters inside the URL fragment/hash (`#param=val` or `#/route?param=val`) to bypass CDN cache busting or network-level strippers.
 
 ## Decision
-We will separate the source code into two target folders to handle browser-specific differences in Manifest V3 (MV3):
-- `/firefox/`: Source code tailored for Firefox (using background scripts).
-- `/chrome/`: Source code tailored for Chrome (using background service workers).
+1. **Separation of Browser Folders**:
+   - `/firefox/`: Source code tailored for Firefox (using background scripts and Gecko settings).
+   - `/chrome/`: Source code tailored for Chrome (using background service workers).
 
-Both extensions will use **Manifest V3 (MV3)** and the **`declarativeNetRequest`** API for query parameter removal, ensuring excellent performance and privacy.
+2. **Hybrid Cleaning Architecture**:
+   - **Network Level (`declarativeNetRequest`)**:
+     - Strips tracking query parameters (`?utm_*`, `?gclid`, `?een`, etc.) at the network level before pages start loading.
+     - Static rules defined in `rules.json` with dynamic rules synchronized via `storage.local`.
+   - **Client-Side Fragment Level (Content Script with `history.replaceState`)**:
+     - Per RFC 3986 Section 3.5, URL fragment identifiers (`#...`) are never sent in HTTP network requests to the server, and `declarativeNetRequest` does not support matching or filtering on fragments.
+     - A lightweight content script runs at `document_start` (`*://*/*`) to inspect `window.location.hash`.
+     - When tracking parameters are found in the hash, `window.history.replaceState` removes them silently without triggering a reload, while preserving navigation anchors.
+     - Listens to `hashchange` events to protect SPA in-page navigations.
 
-### Core Architecture Components for Firefox (`/firefox/`):
-1. **Manifest V3 Configuration**:
-   - Declares the required permissions (`declarativeNetRequest`, `storage`, and `declarativeNetRequestFeedback`).
-   - Uses `"browser_specific_settings"` to specify the extension ID for Firefox.
-   - Declares background scripts via `"background": { "scripts": ["background.js"] }` (non-persistent event pages, as Firefox does not support/require Service Workers for MV3 in the same way Chrome does).
-2. **`rules.json`**:
-   - Defines static rules for removing default parameters (`utm_source`, `utm_medium`, `utm_campaign`) globally.
-3. **`background.js`**:
-   - Coordinates state (enable/disable status) and accumulates counter statistics using `browser.storage.local`.
-4. **Popup UI (`popup.html`, `popup.css`, `popup.js`)**:
-   - Interactive, beautiful dark-themed interface built using CSS styling and modern typography.
-   - Provides controls to toggle extension state, list default blocked parameters, and add/remove custom tracking parameters.
+3. **Expanded Default Trackers**:
+   - Standard analytics: `utm_source`, `utm_medium`, `utm_campaign`, `utm_term`, `utm_content`, `utm_id`.
+   - Ad platforms: `gclid`, `fbclid`, `msclkid`.
+   - Email marketing & newsletters (e.g. MagNews): `een`, `seen`, `gbmlus`.
+
+4. **Automated Unit Testing Strategy**:
+   - Zero-dependency unit testing via Node.js native test runner (`node --test` and `node:assert`).
+   - Shared pure module `url-cleaner.js` containing the URL parsing, query stripping, and hash normalization logic.
+   - Comprehensive tests validating both query and hash formats, edge cases, and preserved user anchors.
 
 ## Consequences
-- Clean separation of concerns between Firefox and Chrome implementations, avoiding build tools or complex conditional compilations.
-- Complete adherence to Firefox MV3 guidelines.
+- Full privacy protection covering both legacy query tracking and modern hash/fragment tracking.
+- Zero latency impact: DNR handles network requests; content script cleans fragments at `document_start` without page reloads.
+- High testability: pure cleaning functions are decoupled and testable in CI and local CLI.

@@ -16,7 +16,10 @@
               "utm_id",
               "gclid",
               "fbclid",
-              "msclkid"
+              "msclkid",
+              "een",
+              "seen",
+              "gbmlus"
             ]
           }
         }

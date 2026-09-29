@@ -7,7 +7,10 @@ const DEFAULT_PARAMS = [
   "utm_id",
   "gclid",
   "fbclid",
-  "msclkid"
+  "msclkid",
+  "een",
+  "seen",
+  "gbmlus"
 ];
 
 // Function to synchronize declarativeNetRequest rules with extension storage state
@@ -99,6 +102,14 @@ browser.storage.onChanged.addListener(async (changes) => {
   }
 });
 
+// Listen to trackers cleaned by the content script (e.g. from hash / in-page fragment)
+browser.runtime.onMessage.addListener(async (message) => {
+  if (message && message.type === "TRACKERS_CLEANED" && typeof message.count === "number" && message.count > 0) {
+    const stats = await browser.storage.local.get({ cleanCount: 0 });
+    await browser.storage.local.set({ cleanCount: stats.cleanCount + message.count });
+  }
+});
+
 // Heuristically count the tracking parameters that are about to be cleaned on main frame navigation
 browser.webNavigation.onBeforeNavigate.addListener(async (details) => {
   if (details.frameId !== 0) return; // Only process main frame navigations
@@ -134,4 +145,3 @@ browser.webNavigation.onBeforeNavigate.addListener(async (details) => {
 
 // Run initial synchronization on background script startup/reload
 syncRules();
-
